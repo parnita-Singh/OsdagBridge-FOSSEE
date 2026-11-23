@@ -142,6 +142,7 @@ from osdagbridge.core.utils.common import (
 )
 
 from osdagbridge.core.reports.report_utils import _tex, _render_value, get_girder_entries
+from osdagbridge.core.reports.styles import FAIL_TEX, PASS_TEX
 
 if TYPE_CHECKING:
     pass
@@ -218,7 +219,7 @@ def ch5_design_checks(checks_data, bridge) -> str:
     try:
         _flex_ur = float(bridge.output_dict.get(KEY_UTIL_FLEXURE)) / 100.0
         _flex_ur_str = f"{_flex_ur:.2f}"
-        _flex_status = "PASS" if _flex_ur <= 1.0 else r"\textcolor{red}{FAIL}"
+        _flex_status = "PASS" if _flex_ur <= 1.0 else FAIL_TEX
     except (TypeError, ValueError):
         _flex_ur_str = ""
         _flex_status = "---"
@@ -240,7 +241,7 @@ def ch5_design_checks(checks_data, bridge) -> str:
     try:
         _shear_ur = float(bridge.output_dict.get(KEY_UTIL_SHEAR)) / 100.0
         _shear_ur_str = f"{_shear_ur:.2f}"
-        _shear_status = "PASS" if _shear_ur <= 1.0 else r"\textcolor{red}{FAIL}"
+        _shear_status = "PASS" if _shear_ur <= 1.0 else FAIL_TEX
     except (TypeError, ValueError):
         _shear_ur_str = ""
         _shear_status = "---"
@@ -273,7 +274,7 @@ def ch5_design_checks(checks_data, bridge) -> str:
             return "PASS"
         elif ratio < 1.00:
             return "WARN"
-        return r"\textcolor{red}{FAIL}"
+        return FAIL_TEX
     # M-V interaction UR stored as percent → show ratio (2 dp).
     try:
         _mv_ur = float(bridge.output_dict.get(KEY_UTIL_INTERACTION)) / 100.0
@@ -354,7 +355,7 @@ def ch5_design_checks(checks_data, bridge) -> str:
     # Status: PASS when Provided ≥ Required.
     def _ge_status(provided, required):
         try:
-            return "PASS" if float(provided) >= float(required) else r"\textcolor{red}{FAIL}"
+            return "PASS" if float(provided) >= float(required) else FAIL_TEX
         except (TypeError, ValueError):
             return "---"
     _iys_status = _ge_status(bridge.output_dict.get(KEY_SD_IS_IYS_PROV),
@@ -404,7 +405,7 @@ def ch5_design_checks(checks_data, bridge) -> str:
             return ("N/A", "N/A", "N/A")
         req_s  = f"{_bs_r} kN"
         prov_s = f"{prov} kN"
-        status = "PASS" if float(prov) >= float(_bs_r) else r"\textcolor{red}{FAIL}"
+        status = "PASS" if float(prov) >= float(_bs_r) else FAIL_TEX
         return (req_s, prov_s, status)
     _wb_req, _wb_prov, _wb_st = _bs_check(KEY_SD_BS_FCDW_WB)
     _lc_req, _lc_prov, _lc_st = _bs_check(KEY_SD_BS_FCDW_LC)
@@ -434,7 +435,7 @@ def ch5_design_checks(checks_data, bridge) -> str:
     def _defl_status(actual, allowable):
         """PASS / red FAIL for deflection; '---' when values are missing."""
         try:
-            return "PASS" if float(actual) <= float(allowable) else r"\textcolor{red}{FAIL}"
+            return "PASS" if float(actual) <= float(allowable) else FAIL_TEX
         except (TypeError, ValueError):
             return "---"
 
@@ -492,7 +493,7 @@ def ch5_design_checks(checks_data, bridge) -> str:
 
     def _stress_status(actual, allow):
         try:
-            return "PASS" if float(actual) <= float(allow) else r"\textcolor{red}{FAIL}"
+            return "PASS" if float(actual) <= float(allow) else FAIL_TEX
         except (TypeError, ValueError):
             return "---"
 
@@ -653,7 +654,7 @@ Fatigue Shear Resistance, $Q_r$ & IRC 22 Table 8 ($\phi d$, $N_{sc}$) & """
     else:
         _ts_ur_str = "---"
     _ts_ok = _dr_sc.get("transverse_shear_ok")
-    _ts_status = (r"\textcolor{red}{FAIL}" if _ts_ok is False else "PASS") if _ts_ok is not None else "---"
+    _ts_status = (FAIL_TEX if _ts_ok is False else "PASS") if _ts_ok is not None else "---"
 
     _ast_req  = _dr_sc.get("Ast_required_cm2_per_m")
     # Provided transverse steel = the deck's main (bottom + top) bars, which run
@@ -737,7 +738,7 @@ Fatigue Shear Resistance, $Q_r$ & IRC 22 Table 8 ($\phi d$, $N_{sc}$) & """
     def get_status_str(slnd_str, limit):
         try:
             v = float(slnd_str)
-            return r"\textcolor{black}{PASS}" if v <= limit else r"\textcolor{red}{FAIL}"
+            return PASS_TEX if v <= limit else FAIL_TEX
         except (ValueError, TypeError):
             return ""
     cb_slenderness_rows = []
@@ -1075,59 +1076,125 @@ This section presents all structural design checks performed by OsdagBridge. For
 
 \vspace{1em}
 \begin{longtable}{|C{2.5cm}|L{8.0cm}|>{\centering\arraybackslash}p{5.0cm}|}
-\caption{\textbf{Girder Section Properties (Final Optimized / User-selected)}}
+\caption{\textbf{Girder Section Properties (Final Optimized / User-selected)}}\\
 \hline
 \textbf{Girder} & \textbf{Property} & \textbf{Value} \\[6pt]
 \hline
+\endfirsthead
+\multicolumn{3}{c}{\tablename\ \thetable{} -- continued from previous page} \\
+\hline
+\textbf{Girder} & \textbf{Property} & \textbf{Value} \\[6pt]
+\hline
+\endhead
+\hline
+\multicolumn{3}{r}{Continued on next page} \\
+\endfoot
+\hline
+\endlastfoot
 """ + t51_content + r"""
 \end{longtable}
 
 \vspace{1em}
 \begin{longtable}{|C{2.5cm}|L{3cm}|C{3.5cm}|C{2.5cm}|>{\centering\arraybackslash}p{4.0cm}|}
-\caption{\textbf{Girder Section Classification}}
+\caption{\textbf{Girder Section Classification}}\\
 \hline
 \textbf{} & \textbf{Element} & \textbf{Slenderness Ratio} & \textbf{Class Limit} & \textbf{Classification} \\[6pt]
 \hline
+\endfirsthead
+\multicolumn{5}{c}{\tablename\ \thetable{} -- continued from previous page} \\
+\hline
+\textbf{} & \textbf{Element} & \textbf{Slenderness Ratio} & \textbf{Class Limit} & \textbf{Classification} \\[6pt]
+\hline
+\endhead
+\hline
+\multicolumn{5}{r}{Continued on next page} \\
+\endfoot
+\hline
+\endlastfoot
 """ + t52_content + r"""
 \end{longtable}
 \noindent\textit{Note: IS 800:2007 Table 2}
 
 \vspace{1em}
 \begin{longtable}{|C{2.5cm}|C{3.5cm}|C{3.5cm}|>{\centering\arraybackslash}p{4.2cm}|C{1.8cm}|}
-\caption{\textbf{Moment Capacity Check}}
+\caption{\textbf{Moment Capacity Check}}\\
 \hline
 \textbf{} & \textbf{Parameter} & \textbf{Formula} & \textbf{Value} & \textbf{Status} \\[6pt]
 \hline
+\endfirsthead
+\multicolumn{5}{c}{\tablename\ \thetable{} -- continued from previous page} \\
+\hline
+\textbf{} & \textbf{Parameter} & \textbf{Formula} & \textbf{Value} & \textbf{Status} \\[6pt]
+\hline
+\endhead
+\hline
+\multicolumn{5}{r}{Continued on next page} \\
+\endfoot
+\hline
+\endlastfoot
 """ + t53_content + r"""
 \end{longtable}
 \noindent\textit{Note: IRC 22 Cl. 603.3.1, IS 800 Cl. 8.2.1}
 
 \vspace{1em}
 \begin{longtable}{|C{2.5cm}|C{3.5cm}|C{3.5cm}|>{\centering\arraybackslash}p{4.2cm}|C{1.8cm}|}
-\caption{\textbf{Shear Capacity Check}}
+\caption{\textbf{Shear Capacity Check}}\\
 \hline
 \textbf{} & \textbf{Parameter} & \textbf{Formula} & \textbf{Value} & \textbf{Status} \\[6pt]
 \hline
+\endfirsthead
+\multicolumn{5}{c}{\tablename\ \thetable{} -- continued from previous page} \\
+\hline
+\textbf{} & \textbf{Parameter} & \textbf{Formula} & \textbf{Value} & \textbf{Status} \\[6pt]
+\hline
+\endhead
+\hline
+\multicolumn{5}{r}{Continued on next page} \\
+\endfoot
+\hline
+\endlastfoot
 """ + t54_content + r"""
 \end{longtable}
 \noindent\textit{Note: IS 800 Cl. 8.4, IRC 22 Cl. 603.3.3.2}
 
 \vspace{1em}
 \begin{longtable}{|C{2.5cm}|C{3.5cm}|C{3.5cm}|>{\centering\arraybackslash}p{4.2cm}|C{1.8cm}|}
-\caption{\textbf{Interaction Checks (M-V and M-N)}}
+\caption{\textbf{Interaction Checks (M-V and M-N)}}\\
 \hline
 \textbf{} & \textbf{Check} & \textbf{Condition} & \textbf{Value} & \textbf{Status} \\[6pt]
 \hline
+\endfirsthead
+\multicolumn{5}{c}{\tablename\ \thetable{} -- continued from previous page} \\
+\hline
+\textbf{} & \textbf{Check} & \textbf{Condition} & \textbf{Value} & \textbf{Status} \\[6pt]
+\hline
+\endhead
+\hline
+\multicolumn{5}{r}{Continued on next page} \\
+\endfoot
+\hline
+\endlastfoot
 """ + t55_content + r"""
 \end{longtable}
 \noindent\textit{Note: IRC 22 Cl. 603.3.3.3}
 
 \vspace{1em}
 \begin{longtable}{|C{2.5cm}|C{3.5cm}|C{3.5cm}|>{\centering\arraybackslash}p{4.2cm}|C{1.8cm}|}
-\caption{\textbf{Lateral Torsional Buckling Check -- Construction Stage}}
+\caption{\textbf{Lateral Torsional Buckling Check -- Construction Stage}}\\
 \hline
 \textbf{} & \textbf{Parameter} & \textbf{Formula} & \textbf{Value} & \textbf{Status} \\[6pt]
 \hline
+\endfirsthead
+\multicolumn{5}{c}{\tablename\ \thetable{} -- continued from previous page} \\
+\hline
+\textbf{} & \textbf{Parameter} & \textbf{Formula} & \textbf{Value} & \textbf{Status} \\[6pt]
+\hline
+\endhead
+\hline
+\multicolumn{5}{r}{Continued on next page} \\
+\endfoot
+\hline
+\endlastfoot
 """ + t56_content + r"""
 \end{longtable}
 \noindent\textit{Note: IRC 22 Cl. 603.3.3.1, IS 800 Cl. 8.2.2}
@@ -1142,39 +1209,81 @@ This section presents all structural design checks performed by OsdagBridge. For
 \vspace{1em}
 
 \begin{longtable}{|C{2.5cm}|L{3.5cm}|C{3.5cm}|>{\centering\arraybackslash}p{4.2cm}|C{1.8cm}|}
-\caption{\textbf{End Panel Stiffener Checks}}
+\caption{\textbf{End Panel Stiffener Checks}} \\
 \hline
 \textbf{} & \textbf{Check} & \textbf{Required} & \textbf{Provided} & \textbf{Status} \\[6pt]
 \hline
+\endfirsthead
+\hline
+\textbf{} & \textbf{Check} & \textbf{Required} & \textbf{Provided} & \textbf{Status} \\[6pt]
+\hline
+\endhead
 """ + t59_content + r"""
 \end{longtable}
 \noindent\textit{Note: IS 800 Cl. 8.4.2.2}
 
 \vspace{1em}
 \begin{longtable}{|C{2.5cm}|L{3.5cm}|C{3.5cm}|>{\centering\arraybackslash}p{3.5cm}|C{2.5cm}|}
-\caption{\textbf{Serviceability -- Deflection Checks}}
+\caption{\textbf{Serviceability -- Deflection Checks}}\\
 \hline
-\textbf{} & \textbf{Check} & \textbf{Allowable} & \textbf{Actual} & \textbf{Status} \\[6pt]
+\textbf{Girder} & \textbf{Check} & \textbf{Allowable} & \textbf{Actual} & \textbf{Status} \\[6pt]
 \hline
+\endfirsthead
+\multicolumn{5}{c}{\tablename\ \thetable{} -- continued from previous page} \\
+\hline
+\textbf{Girder} & \textbf{Check} & \textbf{Allowable} & \textbf{Actual} & \textbf{Status} \\[6pt]
+\hline
+\endhead
+\hline
+\multicolumn{5}{r}{Continued on next page} \\
+\endfoot
+\hline
+\endlastfoot
+""" + t510_content + r"""
+\end{longtable}
 """ + t510_content + r"""
 \end{longtable}
 \noindent\textit{Note: IRC 22 Cl. 604.3.2}
 
 \vspace{1em}
 \begin{longtable}{|C{2.5cm}|L{3.5cm}|C{3.5cm}|>{\centering\arraybackslash}p{3.5cm}|C{2.5cm}|}
-\caption{\textbf{Serviceability -- Maximum Stress Limitation}}
+\caption{\textbf{Serviceability -- Maximum Stress Limitation}}\\
 \hline
 \textbf{} & \textbf{Element} & \textbf{Allowable Stress} & \textbf{Actual Stress} & \textbf{Status} \\[6pt]
 \hline
+\endfirsthead
+\multicolumn{5}{c}{\tablename\ \thetable{} -- continued from previous page} \\
+\hline
+\textbf{} & \textbf{Element} & \textbf{Allowable Stress} & \textbf{Actual Stress} & \textbf{Status} \\[6pt]
+\hline
+\endhead
+\hline
+\multicolumn{5}{r}{Continued on next page} \\
+\endfoot
+\hline
+\endlastfoot
 """ + t511_content + r"""
 \end{longtable}
 
 \vspace{1em}
-\begin{longtable}{|C{2.5cm}|C{3.5cm}|C{3.5cm}|>{\centering\arraybackslash}p{3.5cm}|C{2.5cm}|}
-\caption{\textbf{Serviceability -- Fatigue Assessment}}
+\begin{longtable}{|C{2.5cm}|L{6.5cm}|>{\arraybackslash}p{6.5cm}|}
+\caption{\textbf{Stiffener Design Summary}}\\
 \hline
-\textbf{} & \textbf{Stress Range, $\Delta\sigma$ (MPa)} & \textbf{Fatigue Limit, $f_{fd}$ (MPa)} & \textbf{Utilization Ratio} & \textbf{Status} \\[6pt]
+\textbf{Girder} & \textbf{Parameter} & \textbf{Value} \\[6pt]
 \hline
+\endfirsthead
+\multicolumn{3}{c}{\tablename\ \thetable{} -- continued from previous page} \\
+\hline
+\textbf{Girder} & \textbf{Parameter} & \textbf{Value} \\[6pt]
+\hline
+\endhead
+\hline
+\multicolumn{3}{r}{Continued on next page} \\
+\endfoot
+\hline
+\endlastfoot
+""" + t57_content + r"""
+\end{longtable}
 """ + t512_content + r"""
 \end{longtable}
 \noindent\textit{Note: IRC 22 Cl. 605 --- governing of normal and shear fatigue (worst by DCR). Capacity reduction factor $\mu_r$ applied where plate thickness > 25 mm.}

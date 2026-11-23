@@ -120,6 +120,8 @@ from osdagbridge.core.utils.common import (
 
 from osdagbridge.core.reports.report_utils import _tex
 from .executive_summary import executive_summary
+from .styles import (FONT_SIZE, PAGE_GEOMETRY, TABCOLSEP, ARRAY_STRETCH, OSDAG_GREEN,
+                     PASS_TEX, FAIL_TEX)
 from .chap1 import ch1_project_info
 from .chap2 import ch2_input_parameters
 from .chap3 import ch3_loads
@@ -129,6 +131,7 @@ from .chap6 import ch6_drawings
 from .chap7 import ch7_quantities
 from .chap8 import ch8_design_log
 from .chap9 import references
+from .report_utils import add_repeating_headers, fit_longtable_widths
 
 logger = logging.getLogger(__name__)
 
@@ -153,10 +156,10 @@ def preamble(project_name, job_number, report_date, report_version='Rev 0'):
     rd = _tex(report_date)
     rv = _tex(report_version)
     return r"""
-\documentclass[12pt,a4paper]{report}
+\documentclass[""" + FONT_SIZE + r""",a4paper]{report}
 
 % Packages
-\usepackage[a4paper, margin=1in]{geometry}
+\usepackage[""" + PAGE_GEOMETRY + r"""]{geometry}
 \usepackage{graphicx}
 \usepackage{amsmath}
 \usepackage{amssymb}
@@ -193,8 +196,8 @@ def preamble(project_name, job_number, report_date, report_version='Rev 0'):
 \numberwithin{table}{chapter}
 \numberwithin{figure}{chapter}
 % Table layout and spacing: consistent padding, row height, and longtable pre/post skips
-\setlength{\tabcolsep}{6pt}
-\renewcommand{\arraystretch}{1.12}
+\setlength{\tabcolsep}{""" + TABCOLSEP + r"""}
+\renewcommand{\arraystretch}{""" + ARRAY_STRETCH + r"""}
 \setlength{\LTpre}{0pt}
 \setlength{\LTpost}{6pt}
 % Table rules (outline thickness) and small extra row height for clarity
@@ -204,9 +207,8 @@ def preamble(project_name, job_number, report_date, report_version='Rev 0'):
 % Prevent tables from overflowing past the page bottom:
 % if fewer than 5 baseline-skips remain, break to the next page first.
 \BeforeBeginEnvironment{table}{\needspace{5\baselineskip}}
-\BeforeBeginEnvironment{longtable}{\needspace{5\baselineskip}}
 
-\definecolor{osdagGreen}{HTML}{91B014}
+\definecolor{osdagGreen}{HTML}{""" + OSDAG_GREEN + r"""}
 
 \fancypagestyle{main}{
   \fancyhf{}
@@ -593,8 +595,8 @@ class ReportDataBridge:
             if val is not None:
                 ur = float(val)
                 if ur <= 1.0:
-                    return r"\textcolor{black}{PASS}"
-                return r"\textcolor{red}{FAIL}"
+                    return PASS_TEX
+                return FAIL_TEX
         except (TypeError, ValueError):
             pass
         return ""
@@ -939,13 +941,7 @@ def generate_report(payload, request):
             doc_parts.append(references())
             doc_parts.append(r"\end{document}")
 
-            full_tex = "\n".join(doc_parts)
-
-
-            # NOTE: longtable header repetition is handled per-table in each
-            # chapter file (e.g. \endfirsthead / \endhead).  No automatic
-            # post-processing is applied here to avoid mis-ordering captions
-            # and column headings.
+            full_tex = fit_longtable_widths(add_repeating_headers("\n".join(doc_parts)))
 
             tmp_tex = os.path.join(tmp_dir, request.file_stem + '.tex')
             tmp_pdf = os.path.join(tmp_dir, request.file_stem + '.pdf')

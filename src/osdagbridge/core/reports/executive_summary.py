@@ -163,6 +163,7 @@ def executive_summary(input_dict, output_dict, fig_paths) -> str:
     table1 = (r'\noindent\textbf{Table 1 -- Final Bridge Geometry (after optimization)}' + '\n\n'
               r'\vspace{0.4em}' + '\n'
               r'\noindent' + '\n'
+              r'\resizebox{\textwidth}{!}{%' + '\n'
               r'\begin{tabular}{' + col_spec + '}\n'
               r'\hline' + '\n'
               + header_row +
@@ -175,7 +176,20 @@ def executive_summary(input_dict, output_dict, fig_paths) -> str:
               r'\hline' + '\n'
               + urs + '\n'
               r'\hline' + '\n'
-              r'\end{tabular}')
+              r'\end{tabular}}')
+    cb_max = _max_member_efficiency(cb_results)
+    ed_max = _max_member_efficiency(ed_results)
+
+    def _ok(v):
+        return "pass" if (v is None or v <= 1.0) else "fail"
+
+    outcomes = [
+        ("Girder design", "pass" if (per_girder and not failing) else "fail"),
+        ("Cross bracing design", _ok(cb_max)),
+        ("End Diaphragm design", _ok(ed_max)),
+        ("Deck design", _ok(deck_max)),
+    ]
+    outcome_lines = " \\\\\n".join(f"{name} {res}" for name, res in outcomes)
 
     return r"""
 \newpage
@@ -202,9 +216,9 @@ This section provides a concise summary of the bridge design, key inputs, govern
 \hline
 \textbf{No. of Girders} & """ + (_render_value(input_dict, KEY_TS_NO_OF_GIRDERS)) + r""" \\
 \hline
-\textbf{Girder Spacing} & """ + (_render_value(input_dict, KEY_TS_GIRDER_SPACING)) + r""" \\
+\textbf{Girder Spacing} & """ + (_render_value(input_dict, KEY_TS_GIRDER_SPACING, ' m')) + r""" \\
 \hline
-\textbf{Deck Thickness} & """ + (_render_value(input_dict, KEY_TS_DECK_THICKNESS)) + r""" \\
+\textbf{Deck Thickness} & """ + (_render_value(input_dict, KEY_TS_DECK_THICKNESS, ' mm')) + r""" \\
 \hline
 \textbf{Overall Design Status} & """ + (_tex(overall_design_status)) + r""" \\
 \hline
@@ -230,10 +244,7 @@ This section provides a concise summary of the bridge design, key inputs, govern
 \addcontentsline{toc}{section}{Key Design Outcomes Summary}
 \label{sec:key-outcomes}
 
-\noindent Girder design pass \\
-Cross bracing design pass \\
-End Diaphragm design pass \\
-Deck design pass
+\noindent """ + outcome_lines + r"""
 
 \section*{Design Assumptions and Limitations}
 \addcontentsline{toc}{section}{Design Assumptions and Limitations}
