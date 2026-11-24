@@ -131,7 +131,7 @@ from .chap6 import ch6_drawings
 from .chap7 import ch7_quantities
 from .chap8 import ch8_design_log
 from .chap9 import references
-from .report_utils import add_repeating_headers, fit_longtable_widths
+from .report_utils import (add_repeating_headers, fit_longtable_widths,terminate_longtable_captions, fix_empty_endhead)
 
 logger = logging.getLogger(__name__)
 
@@ -308,7 +308,7 @@ def title_page(m, osdag_logo, org_logo):
 """
 
     return r"""
-\begin{titlepage}
+\begingroup
 \thispagestyle{firstpage}
 \centering
 \vspace*{1.5cm}
@@ -337,7 +337,7 @@ def title_page(m, osdag_logo, org_logo):
 \textbf{Report Version} & """ + (_tex(m.subtitle) if m.subtitle else '') + r""" \\
 \hline
 \end{tabular}
-\end{titlepage}
+\endgroup
 """
 
 
@@ -926,11 +926,11 @@ def generate_report(payload, request):
             if 'analysis' in secs:
                 doc_parts.append(ch4_analysis(payload.analysis_summary, fig_paths, bridge, span_m))
             if 'design_checks' in secs:
-                doc_parts.append(ch5_design_checks(payload.design_checks, bridge))
+                doc_parts.append(ch5_design_checks(payload.design_checks, bridge, chart_dir=tmp_images))
             if 'drawings' in secs and payload.options.include_figures:
                 doc_parts.append(ch6_drawings(fig_paths))
 
-            doc_parts.append(ch7_quantities(payload.inputs))
+            doc_parts.append(ch7_quantities(payload.inputs, chart_dir=tmp_images))
 
             mode = str(payload.inputs.get(KEY_DESIGN_MODE, "Optimized")).strip().lower()
             is_custom = mode in {"custom", "customized"}
@@ -941,7 +941,7 @@ def generate_report(payload, request):
             doc_parts.append(references())
             doc_parts.append(r"\end{document}")
 
-            full_tex = fit_longtable_widths(add_repeating_headers("\n".join(doc_parts)))
+            full_tex = fit_longtable_widths(fix_empty_endhead(add_repeating_headers(terminate_longtable_captions("\n".join(doc_parts)))))
 
             tmp_tex = os.path.join(tmp_dir, request.file_stem + '.tex')
             tmp_pdf = os.path.join(tmp_dir, request.file_stem + '.pdf')

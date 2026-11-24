@@ -251,7 +251,7 @@ def _girder_tables(input_dict, n_girders):
         )
     ]
 
-        # Girder dimensions may be held in metres (optimized mode, resolved by the
+    # Girder dimensions may be held in metres (optimized mode, resolved by the
     # backend) or millimetres (user-entered). Show them all in mm.
     # `m_below` = largest value that can only be metres for that dimension
     # (a girder is never 20 m deep / wide, a plate is never 1 m thick).
@@ -441,17 +441,8 @@ def _bracing_tables(input_dict, n_girders):
 \newpage
 
 \vspace{0.4em}
+\begingroup
 \setlength{\tabcolsep}{4pt}
-\setlength\LTleft{0pt}
-\setlength\LTright{\fill}
-
-
-
-
-
-r"""\setlength{\tabcolsep}{4pt}
-\setlength\LTleft{0pt}
-\setlength\LTright{\fill}
 
 \begin{longtable}{|L{2.2cm}|L{2.2cm}|L{3.0cm}|L{2.5cm}|C{1.8cm}|}
 \caption{\textbf{Member Properties: Cross Bracing Details}}\\
@@ -464,19 +455,14 @@ r"""\setlength{\tabcolsep}{4pt}
 \textbf{Location} & \textbf{Member IDs} & \textbf{Type of Bracing} & \textbf{Bracing Section} & \textbf{Spacing (m)} \\
 \hline
 \endhead
-\hline
 \multicolumn{5}{r}{Continued on next page} \\
 \endfoot
-\hline
 \endlastfoot
 """
 + cb_rows
 + r"""\end{longtable}
 
 \vspace{0.4em}
-\setlength{\tabcolsep}{4pt}
-\setlength\LTleft{0pt}
-\setlength\LTright{\fill}
 
 \begin{longtable}{|L{2.2cm}|L{2.2cm}|L{3.0cm}|L{2.5cm}|}
 \caption{\textbf{Member Properties: End Diaphragm Details}}\\
@@ -489,38 +475,13 @@ r"""\setlength{\tabcolsep}{4pt}
 \textbf{Location} & \textbf{Member IDs} & \textbf{Type of Bracing} & \textbf{Bracing Section} \\
 \hline
 \endhead
-\hline
 \multicolumn{4}{r}{Continued on next page} \\
 \endfoot
-\hline
 \endlastfoot
 """
 + ed_rows
 + r"""\end{longtable}
-""")
-
-\hline
-\textbf{Location} &
-\textbf{Member IDs} &
-\textbf{Type of Bracing} &
-\textbf{Bracing Section} &
-\textbf{Spacing (m)} &
-\textbf{} \\
-\hline
-\endfirsthead
-
-\hline
-\textbf{Location} &
-\textbf{Member IDs} &
-\textbf{Type of Bracing} &
-\textbf{Bracing Section} &
-\textbf{Spacing (m)} &
-\textbf{} \\
-\hline
-\endhead
-"""
-+ ed_rows
-+ r"""\end{longtable}
+\endgroup
 """)
 
 
@@ -596,4 +557,3 @@ def _safety_factors_table(input_dict):
 \hline
 \end{longtable}
 """
-

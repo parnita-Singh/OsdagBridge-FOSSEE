@@ -143,10 +143,11 @@ from osdagbridge.core.utils.common import (
 
 from osdagbridge.core.reports.report_utils import _tex, _render_value, get_girder_entries
 from osdagbridge.core.reports.styles import FAIL_TEX, PASS_TEX
+from osdagbridge.core.reports.charts import build_ur_chart_tex
 
 if TYPE_CHECKING:
     pass
-def ch5_design_checks(checks_data, bridge) -> str:
+def ch5_design_checks(checks_data, bridge, chart_dir=None) -> str:
     """Chapter 5 — Design Checks.
 
     Parameters
@@ -976,8 +977,11 @@ Fatigue Shear Resistance, $Q_r$ & IRC 22 Table 8 ($\phi d$, $N_{sc}$) & """
         ratio, sf, lim = best
         return ("---", f"{sf:.1f}", f"{lim:.0f}", _ur_522(ratio))
 
+    _ur_records = []   # (row label, UR cell) -> utilization-ratio charts
+
     def _row522(label, cells):
         c = [x if x else "---" for x in cells]
+        _ur_records.append((label, c[-1]))
         return label + r" & " + r" & ".join(c) + r" \\[6pt]" + "\n\\hline"
 
     # Deck rows: Demand/Capacity from deck_report_values (KEY_DD_*, the same dict
@@ -1065,6 +1069,7 @@ Fatigue Shear Resistance, $Q_r$ & IRC 22 Table 8 ($\phi d$, $N_{sc}$) & """
         _ed_shear_row,
     ]
     t522_content = "\n".join(_t522)
+    ur_charts_tex = build_ur_chart_tex(_ur_records, chart_dir)
 
     return r"""
 \chapter{Design Checks}
@@ -1201,8 +1206,21 @@ This section presents all structural design checks performed by OsdagBridge. For
 
 \vspace{1em}
 \begin{longtable}{|C{2.5cm}|L{6.5cm}|>{\arraybackslash}p{6.5cm}|}
-\caption{\textbf{Stiffener Design Summary}}
+\caption{\textbf{Stiffener Design Summary}}\\
 \hline
+\textbf{Girder} & \textbf{Parameter} & \textbf{Value} \\[6pt]
+\hline
+\endfirsthead
+\multicolumn{3}{c}{\tablename\ \thetable{} -- continued from previous page} \\
+\hline
+\textbf{Girder} & \textbf{Parameter} & \textbf{Value} \\[6pt]
+\hline
+\endhead
+\hline
+\multicolumn{3}{r}{Continued on next page} \\
+\endfoot
+\hline
+\endlastfoot
 """ + t57_content + r"""
 \end{longtable}
 """ + t58_block + r"""
@@ -1241,20 +1259,18 @@ This section presents all structural design checks performed by OsdagBridge. For
 \endlastfoot
 """ + t510_content + r"""
 \end{longtable}
-""" + t510_content + r"""
-\end{longtable}
 \noindent\textit{Note: IRC 22 Cl. 604.3.2}
 
 \vspace{1em}
 \begin{longtable}{|C{2.5cm}|L{3.5cm}|C{3.5cm}|>{\centering\arraybackslash}p{3.5cm}|C{2.5cm}|}
 \caption{\textbf{Serviceability -- Maximum Stress Limitation}}\\
 \hline
-\textbf{} & \textbf{Element} & \textbf{Allowable Stress} & \textbf{Actual Stress} & \textbf{Status} \\[6pt]
+\textbf{Girder} & \textbf{Element} & \textbf{Allowable Stress} & \textbf{Actual Stress} & \textbf{Status} \\[6pt]
 \hline
 \endfirsthead
 \multicolumn{5}{c}{\tablename\ \thetable{} -- continued from previous page} \\
 \hline
-\textbf{} & \textbf{Element} & \textbf{Allowable Stress} & \textbf{Actual Stress} & \textbf{Status} \\[6pt]
+\textbf{Girder} & \textbf{Element} & \textbf{Allowable Stress} & \textbf{Actual Stress} & \textbf{Status} \\[6pt]
 \hline
 \endhead
 \hline
@@ -1266,35 +1282,45 @@ This section presents all structural design checks performed by OsdagBridge. For
 \end{longtable}
 
 \vspace{1em}
-\begin{longtable}{|C{2.5cm}|L{6.5cm}|>{\arraybackslash}p{6.5cm}|}
-\caption{\textbf{Stiffener Design Summary}}\\
+\begin{longtable}{|C{2.5cm}|C{3.5cm}|C{3.5cm}|>{\centering\arraybackslash}p{3.5cm}|C{2.5cm}|}
+\caption{\textbf{Serviceability -- Fatigue Assessment}}\\
 \hline
-\textbf{Girder} & \textbf{Parameter} & \textbf{Value} \\[6pt]
+\textbf{Girder} & \textbf{Stress Range, $\Delta\sigma$ (MPa)} & \textbf{Fatigue Limit, $f_{fd}$ (MPa)} & \textbf{Utilization Ratio} & \textbf{Status} \\[6pt]
 \hline
 \endfirsthead
-\multicolumn{3}{c}{\tablename\ \thetable{} -- continued from previous page} \\
+\multicolumn{5}{c}{\tablename\ \thetable{} -- continued from previous page} \\
 \hline
-\textbf{Girder} & \textbf{Parameter} & \textbf{Value} \\[6pt]
+\textbf{Girder} & \textbf{Stress Range, $\Delta\sigma$ (MPa)} & \textbf{Fatigue Limit, $f_{fd}$ (MPa)} & \textbf{Utilization Ratio} & \textbf{Status} \\[6pt]
 \hline
 \endhead
 \hline
-\multicolumn{3}{r}{Continued on next page} \\
+\multicolumn{5}{r}{Continued on next page} \\
 \endfoot
 \hline
 \endlastfoot
-""" + t57_content + r"""
-\end{longtable}
 """ + t512_content + r"""
 \end{longtable}
+
 \noindent\textit{Note: IRC 22 Cl. 605 --- governing of normal and shear fatigue (worst by DCR). Capacity reduction factor $\mu_r$ applied where plate thickness > 25 mm.}
 
 \vspace{1em}
 \vspace{0.4em}
 \begin{longtable}{|C{1.6cm}|>{\centering\arraybackslash}p{3.6cm}|C{2.4cm}|C{2.0cm}|C{2.1cm}|C{1.7cm}|C{1.5cm}|}
-\caption{\textbf{Girder Design Summary (DCR / Utilization Ratio)}}
+\caption{\textbf{Girder Design Summary (DCR / Utilization Ratio)}}\\
 \hline
 \textbf{Girder} & \textbf{Controlling LC / Combination} & \textbf{Controlling Check} & \textbf{Demand} & \textbf{Capacity} & \textbf{UR} & \textbf{Status} \\[6pt]
 \hline
+\endfirsthead
+\multicolumn{7}{c}{\tablename\ \thetable{} -- continued from previous page} \\
+\hline
+\textbf{Girder} & \textbf{Controlling LC / Combination} & \textbf{Controlling Check} & \textbf{Demand} & \textbf{Capacity} & \textbf{UR} & \textbf{Status} \\[6pt]
+\hline
+\endhead
+\hline
+\multicolumn{7}{r}{Continued on next page} \\
+\endfoot
+\hline
+\endlastfoot
 """ + g_summary_table_content + r"""
 \end{longtable}
 \noindent\textit{Note: UR = Demand / Capacity. A value $\leq 1.0$ indicates a passing check. The controlling check is the criterion with the highest UR for each girder, with the real load case/combination that drives it.}
@@ -1302,17 +1328,25 @@ This section presents all structural design checks performed by OsdagBridge. For
 \vspace{1em}
 
 \begin{longtable}{|L{3.6cm}|C{5.6cm}|>{\centering\arraybackslash}p{2.6cm}|L{3.0cm}|}
-\caption{\textbf{Shear Connector Capacity}}
+\caption{\textbf{Shear Connector Capacity}}\\
 \hline
 \textbf{Parameter} & \textbf{Formula} & \textbf{Value} & \textbf{Reference} \\[6pt]
 \hline
+\endfirsthead
+\multicolumn{4}{c}{\tablename\ \thetable{} -- continued from previous page} \\
+\hline
+\textbf{Parameter} & \textbf{Formula} & \textbf{Value} & \textbf{Reference} \\[6pt]
+\hline
+\endhead
+\hline
+\multicolumn{4}{r}{Continued on next page} \\
+\endfoot
+\hline
+\endlastfoot
 """ + t514_content + r"""
 \end{longtable}
 
 \vspace{1em}
-
-\setlength\LTleft{0pt}
-\setlength\LTright{\fill}
 
 \begin{longtable}{|L{3.2cm}|>{\centering\arraybackslash}p{4.3cm}|>{\centering\arraybackslash}p{4.3cm}|C{2.0cm}|}
 \caption{\textbf{Shear Connector Spacing}}
@@ -1342,7 +1376,9 @@ The reinforced concrete deck slab is designed per IRC~112:2011 (flexure, shear, 
 
 \vspace{1em}
 \begin{longtable}{|L{5.5cm}|p{10.0cm}|}
-\caption{\textbf{Deck Slab --- Loading and Geometry}}
+\caption{\textbf{Deck Slab --- Loading and Geometry}} \\
+\hline
+\textbf{Parameter} & \textbf{Value} \\[6pt]
 \hline
 \textnormal{Effective Span of Deck Slab, $l_{eff}$} & """ + _dkf(KEY_DD_SPAN, nd=0, scale=1000.0) + r""" mm (girder spacing, c/c) \\[6pt]
 \hline
@@ -1517,9 +1553,8 @@ Cross bracing between adjacent plate girders provides lateral stability during c
 
 \vspace{0.4em}
 \noindent
+\begingroup
 \setlength{\tabcolsep}{4pt}
-\setlength\LTleft{0pt}
-\setlength\LTright{\fill}
 
 \begin{longtable}{|C{2.0cm}|L{2.0cm}|L{2.2cm}|C{2.5cm}|C{2.0cm}|C{2.0cm}|}
 \caption{\textbf{Cross Bracing --- Connection and Section Properties}}
@@ -1549,6 +1584,7 @@ Cross bracing between adjacent plate girders provides lateral stability during c
 """ + cb_capacity_content + r"""
 \end{longtable}
 \noindent\textit{Note: Designed per IS 800 Cl. 7 (compression) and Cl. 6 (tension). OsdagBridge cross-bracing module used.}
+\endgroup
 
 % ===========================
 \section{End Diaphragm Design}
@@ -1561,9 +1597,8 @@ End diaphragms at the supports transfer transverse loads to the bearings, restra
 
 \vspace{0.4em}
 \noindent
+\begingroup
 \setlength{\tabcolsep}{4pt}
-\setlength{\LTleft}{0pt}
-\setlength{\LTright}{\fill}
 
 \begin{longtable}{|C{2.0cm}|L{2.0cm}|L{2.2cm}|C{2.5cm}|C{2.0cm}|C{2.0cm}|}
 \caption{\textbf{End Diaphragm --- Connection and Section Properties}}
@@ -1594,6 +1629,7 @@ End diaphragms at the supports transfer transverse loads to the bearings, restra
 """ + cb_capacity_content + r"""
 \end{longtable}
 \noindent\textit{Note: Designed per IS 800 Cl. 7 (compression) and Cl. 6 (tension). OsdagBridge cross-bracing module used.}
+\endgroup
 
 % ===========================
 \section{Overall Design Check Summary}
@@ -1610,5 +1646,4 @@ End diaphragms at the supports transfer transverse loads to the bearings, restra
 \end{longtable}
 \noindent\textit{Note: UR = Demand / Capacity. All values $\leq 1.0$ indicate passing checks. The governing check for each component is highlighted in the individual design check sections above.}
 
-"""
-
+""" + ur_charts_tex

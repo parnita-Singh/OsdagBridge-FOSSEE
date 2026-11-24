@@ -21,3 +21,9 @@ ARRAY_STRETCH = "1.12"                                # row height factor
 OSDAG_GREEN = "91B014"                                # header / footer rules
 PASS_TEX = r"\textcolor{black}{PASS}"
 FAIL_TEX = r"\textcolor{red}{FAIL}"
+
+# ---- chart colours -------------------------------------------------------
+CHART_PASS = "#2E6F9E"        # passing bars (UR <= 1.0)
+CHART_FAIL = "#C0392B"        # failing bars (UR > 1.0), drawn hatched as well
+CHART_LIMIT = "#C0392B"       # dashed UR = 1.0 line
+CHART_NEUTRAL = "#5B7F95"     # quantity bars

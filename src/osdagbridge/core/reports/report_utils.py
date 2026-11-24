@@ -116,6 +116,16 @@ def _fig_embed(path, caption, width=r'\textwidth', height=None):
             r'}}')
 
 
+_CAP_LT = re.compile(
+    r'(\\begin\{longtable\}(?:\[[^\]]*\])?\{(?:[^{}]|\{[^{}]*\})*\}[ \t]*\r?\n'
+    r'[ \t]*\\caption\{(?:[^{}]|\{(?:[^{}]|\{(?:[^{}]|\{[^{}]*\})*\})*\})*\})'
+    r'[ \t]*(\r?\n)')
+
+
+def terminate_longtable_captions(tex: str) -> str:
+    """A longtable \\caption must end with \\\\ or the next \\hline raises
+    'Misplaced \\noalign' and pdflatex aborts. Add it where it is missing."""
+    return _CAP_LT.sub(lambda m: m.group(1) + ' \\\\' + m.group(2), tex)
 
 _LT = re.compile(r'(\\begin\{longtable\}(?:\[[^\]]*\])?\{(?:[^{}]|\{[^{}]*\})*\}[ \t]*\n)(.*?)(\\end\{longtable\})', re.S)
 _HEAD = re.compile(
@@ -143,6 +153,24 @@ def add_repeating_headers(tex: str) -> str:
         return begin + new + body[h.end():] + end
     return _LT.sub(fix, tex)
 
+def fix_empty_endhead(tex: str) -> str:
+    """If a longtable has \\endfirsthead immediately followed by an empty
+    \\endhead, copy the first-page header into \\endhead so it repeats."""
+    def fix(m):
+        begin, body, end = m.groups()
+        e = re.search(r'\\endfirsthead[ \t]*\r?\n\s*\\endhead', body)
+        if not e:
+            return m.group(0)
+        pre = body[:e.start()]
+        head = re.sub(r'\A\s*\\caption\{(?:[^{}]|\{(?:[^{}]|\{[^{}]*\})*\})*\}'
+                      r'[ \t]*(?:\\\\)?[ \t]*\r?\n', '', pre, count=1)
+        if not head.strip():
+            return m.group(0)
+        if not head.endswith('\n'):
+            head += '\n'
+        return (begin + pre + '\\endfirsthead\n' + head + '\\endhead'
+                + body[e.end():] + end)
+    return _LT.sub(fix, tex)
 
 _PT_CM = 0.035146
 _LT_FULL = re.compile(
